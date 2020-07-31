@@ -16,6 +16,7 @@
 
 package org.springframework.cloud.config.server.environment;
 
+import org.springframework.cloud.config.server.config.ConfigServerProperties;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 /**
@@ -24,16 +25,21 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 public class RedisEnvironmentRepositoryFactory implements
 		EnvironmentRepositoryFactory<RedisEnvironmentRepository, RedisEnvironmentProperties> {
 
-	private StringRedisTemplate redis;
+	private final StringRedisTemplate redis;
 
-	public RedisEnvironmentRepositoryFactory(StringRedisTemplate redis) {
+	private final ConfigServerProperties serverProperties;
+
+	public RedisEnvironmentRepositoryFactory(StringRedisTemplate redis,
+			ConfigServerProperties serverProperties) {
 		this.redis = redis;
+		this.serverProperties = serverProperties;
 	}
 
 	@Override
 	public RedisEnvironmentRepository build(
 			RedisEnvironmentProperties environmentProperties) {
-		return new RedisEnvironmentRepository(this.redis, environmentProperties);
+		return new RedisEnvironmentRepository(this.redis, environmentProperties,
+				serverProperties);
 	}
 
 }

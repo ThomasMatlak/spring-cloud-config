@@ -16,19 +16,15 @@
 
 package org.springframework.cloud.config.server.environment;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.cloud.config.environment.Environment;
 import org.springframework.cloud.config.environment.PropertySource;
+import org.springframework.cloud.config.server.config.ConfigServerProperties;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StringUtils;
 
 /**
  * @author Piotr Mińkowski
+ * @author Thomas Matlak
  */
 public class RedisEnvironmentRepository implements EnvironmentRepository {
 
@@ -36,33 +32,48 @@ public class RedisEnvironmentRepository implements EnvironmentRepository {
 
 	private final RedisEnvironmentProperties properties;
 
+	private final ConfigServerProperties serverProperties;
+
 	public RedisEnvironmentRepository(StringRedisTemplate redis,
-			RedisEnvironmentProperties properties) {
+			RedisEnvironmentProperties properties,
+			ConfigServerProperties configServerProperties) {
 		this.redis = redis;
 		this.properties = properties;
+		this.serverProperties = configServerProperties;
 	}
 
 	@Override
 	public Environment findOne(String application, String profile, String label) {
+		application = StringUtils.isEmpty(application)
+				? serverProperties.getDefaultApplicationName() : application;
+		profile = StringUtils.isEmpty(profile) ? serverProperties.getDefaultProfile()
+				: profile;
+		label = StringUtils.isEmpty(label) ? serverProperties.getDefaultLabel() : label;
+
 		String[] profiles = StringUtils.commaDelimitedListToStringArray(profile);
 		Environment environment = new Environment(application, profiles, label, null,
 				null);
-		final List<String> keys = addKeys(application, Arrays.asList(profiles));
-		keys.forEach(it -> {
-			Map<?, ?> m = redis.opsForHash().entries(it);
-			environment.add(new PropertySource("redis:" + it, m));
-		});
+
+		for (String prof : profiles) {
+			environment.add(generatePropertySource(application, prof, label));
+		}
+
 		return environment;
 	}
 
-	private List<String> addKeys(String application, List<String> profiles) {
-		List<String> keys = new ArrayList<>();
-		keys.add(application);
-		for (String profile : profiles) {
-			keys.add(application + "-" + profile);
+	private PropertySource generatePropertySource(String application, String profile,
+			String label) {
+		String key = application;
+
+		if (!StringUtils.isEmpty(profile)) {
+			key += "-" + profile;
 		}
-		Collections.reverse(keys);
-		return keys;
+
+		if (!StringUtils.isEmpty(label)) {
+			key += "-" + label;
+		}
+
+		return new PropertySource("redis:" + key, redis.opsForHash().entries(key));
 	}
 
 }

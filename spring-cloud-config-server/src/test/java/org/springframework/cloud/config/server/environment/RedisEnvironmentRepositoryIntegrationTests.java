@@ -27,6 +27,7 @@ import redis.embedded.RedisServer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.redis.DataRedisTest;
 import org.springframework.cloud.config.environment.Environment;
+import org.springframework.cloud.config.server.config.ConfigServerProperties;
 import org.springframework.data.redis.core.BoundHashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -57,12 +58,13 @@ public class RedisEnvironmentRepositoryIntegrationTests {
 
 	@Test
 	public void test() {
-		BoundHashOperations bound = redis.boundHashOps("foo-bar");
+		BoundHashOperations bound = redis.boundHashOps("foo-bar-baz");
 		bound.put("name", "foo");
 		bound.put("tag", "myapp");
 
 		Environment env = new RedisEnvironmentRepository(redis,
-				new RedisEnvironmentProperties()).findOne("foo", "bar", "");
+				new RedisEnvironmentProperties(), new ConfigServerProperties())
+						.findOne("foo", "bar", "baz");
 		assertThat(env.getName()).isEqualTo("foo");
 		assertThat(env.getPropertySources()).isNotEmpty();
 		assertThat(env.getPropertySources().get(0).getSource().get("tag"))

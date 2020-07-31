@@ -273,8 +273,8 @@ public class EnvironmentRepositoryConfiguration {
 		@Bean
 		@ConditionalOnBean(StringRedisTemplate.class)
 		public RedisEnvironmentRepositoryFactory redisEnvironmentRepositoryFactory(
-				StringRedisTemplate redis) {
-			return new RedisEnvironmentRepositoryFactory(redis);
+				StringRedisTemplate redis, ConfigServerProperties serverProperties) {
+			return new RedisEnvironmentRepositoryFactory(redis, serverProperties);
 		}
 
 	}
